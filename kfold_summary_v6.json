@@ -1,0 +1,301 @@
+{
+  "version": "v6",
+  "n_folds": 3,
+  "architecture": {
+    "backbone": "EfficientNet-B3",
+    "pretrained": "ImageNet",
+    "img_size": 300,
+    "dual_head": "cls + quality_regression",
+    "calibration": "Platt Scaling (LogisticRegression on logits)"
+  },
+  "training": {
+    "loss": "FocalLoss(\u03b1=0.75,\u03b3=2.0)+LabelSmoothing(\u03b5=0.05)+MSE(\u03bb=0.3)",
+    "optimizer": "AdamW layerwise LR",
+    "lr_backbone": 0.0001,
+    "lr_head": 0.0003,
+    "weight_decay": 0.0001,
+    "epochs_max": 30,
+    "patience": 7,
+    "batch_size": 16
+  },
+  "augmentation": {
+    "train": [
+      "RandomCrop",
+      "HFlip",
+      "VFlip",
+      "Rotate15",
+      "CLAHE(p=0.3)",
+      "ElasticTransform(\u03b1=0.5,p=0.2)",
+      "GridDistortion(p=0.2)",
+      "RandomGamma(80-120,p=0.3)[NEW v6]",
+      "ColorJitter",
+      "GaussNoise"
+    ],
+    "tta": [
+      "HFlip",
+      "Rotate10",
+      "ColorJitter",
+      "RandomGamma(90-110,p=0.2)"
+    ],
+    "tta_n": 5
+  },
+  "data": {
+    "quality_normalization": "(score-1)/9",
+    "quality_reject_threshold": 0.278,
+    "max_img_per_patient": 8,
+    "split": "patient-level stratified 3-fold"
+  },
+  "results": {
+    "mean_auc": 0.9977106227106227,
+    "std_auc": 0.0012950673648105219,
+    "mean_accuracy": 0.9905660377358491,
+    "mean_sensitivity": 0.9871794871794872,
+    "mean_specificity": 1.0,
+    "mean_ece_raw": 0.10633197984769473,
+    "mean_ece_cal": 0.05472453393717941,
+    "pooled_ece_raw": 0.09284743714796484,
+    "pooled_ece_cal": 0.05472453393717939,
+    "pooled_brier": 0.018569856050940938,
+    "mean_patient_accuracy": 0.9922480620155039,
+    "best_fold": 2
+  },
+  "platt_params": [
+    {
+      "fold": 1,
+      "w": 3.712062549288739,
+      "b": 3.093444357398671
+    },
+    {
+      "fold": 2,
+      "w": 3.173734022712443,
+      "b": 1.381264376876018
+    },
+    {
+      "fold": 3,
+      "w": 3.197311223515314,
+      "b": 2.3984408501442664
+    }
+  ],
+  "changes_from_v5": [
+    "REPLACE Temperature Scaling \u2192 Platt Scaling (2-param w,b)",
+    "ADD RandomGamma(gamma_limit=(80,120), p=0.3) to train augmentation",
+    "ADD RandomGamma(90-110, p=0.2) to TTA",
+    "ADD Pooled ECE (3 fold, 5 bin) as primary calibration metric",
+    "ADD Patient-level majority vote as primary clinical metric",
+    "ADD README.md + requirements.txt auto-generation",
+    "UPDATE Citation: HYGD v1.1.0 + GONet IEEE TBME 73(1):32-39, 2026"
+  ],
+  "citations": {
+    "dataset": "Abramovich et al. (2026). HYGD v1.1.0. DOI:10.13026/m92s-0z95",
+    "paper": "Abramovich et al. (2026). GONet. IEEE TBME 73(1):32-39. DOI:10.1109/TBME.2025.3576688",
+    "platform": "Goldberger et al. (2000). Circulation 101(23):e215-e220."
+  },
+  "limitations": {
+    "single_institution": "Hillel Yaffe Medical Center, Israel",
+    "single_camera": "TOPCON DRI OCT Triton, 45\u00b0 FOV",
+    "nationality": "Israeli patients, age 36-95",
+    "test_size": "Only 106 images (28 GON-) \u2014 ECE estimate limited",
+    "generalization": "Cross-institution validation not performed",
+    "ece_note": "ECE target <0.05 not achievable with 28 GON- samples; <0.08 is realistic"
+  },
+  "fold_results": [
+    {
+      "auc": 0.9958791208791209,
+      "accuracy": 0.9905660377358491,
+      "sensitivity": 0.9871794871794872,
+      "specificity": 1.0,
+      "best_threshold": 0.6546234808506797,
+      "brier_raw": 0.041459865753457795,
+      "brier_cal": 0.020179408722592128,
+      "ece_raw": 0.14385911300075507,
+      "ece_cal": 0.04319032213394283,
+      "tp": 77,
+      "tn": 28,
+      "fp": 0,
+      "fn": 1,
+      "patient_accuracy": 1.0,
+      "n_patients": 43,
+      "fn_patients_count": 0,
+      "fp_patients_count": 0,
+      "bucket_results": [
+        {
+          "name": "Sedang (3.5-5.0)",
+          "n": 16,
+          "n_gon_pos": 15,
+          "n_gon_neg": 1,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.046187331455839
+        },
+        {
+          "name": "Cukup (5.0-6.0)",
+          "n": 26,
+          "n_gon_pos": 19,
+          "n_gon_neg": 7,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.05080009484281049
+        },
+        {
+          "name": "Baik (6.0-7.0)",
+          "n": 57,
+          "n_gon_pos": 42,
+          "n_gon_neg": 15,
+          "auc": 0.9904761904761905,
+          "acc": 0.9824561403508771,
+          "fn": 1,
+          "fp": 0,
+          "ece_bucket": 0.044688611169088115
+        },
+        {
+          "name": "SangatBaik (>7.0)",
+          "n": 5,
+          "n_gon_pos": 0,
+          "n_gon_neg": 5,
+          "auc": NaN,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": NaN
+        }
+      ],
+      "fold": 1
+    },
+    {
+      "auc": 0.9986263736263736,
+      "accuracy": 0.9905660377358491,
+      "sensitivity": 0.9871794871794872,
+      "specificity": 1.0,
+      "best_threshold": 0.6391245181159837,
+      "brier_raw": 0.026858378553995935,
+      "brier_cal": 0.01912803584385117,
+      "ece_raw": 0.08516600025501453,
+      "ece_cal": 0.06743804754849447,
+      "tp": 77,
+      "tn": 28,
+      "fp": 0,
+      "fn": 1,
+      "patient_accuracy": 1.0,
+      "n_patients": 43,
+      "fn_patients_count": 0,
+      "fp_patients_count": 0,
+      "bucket_results": [
+        {
+          "name": "Sedang (3.5-5.0)",
+          "n": 16,
+          "n_gon_pos": 15,
+          "n_gon_neg": 1,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.05329916849175781
+        },
+        {
+          "name": "Cukup (5.0-6.0)",
+          "n": 26,
+          "n_gon_pos": 19,
+          "n_gon_neg": 7,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.08507276086405646
+        },
+        {
+          "name": "Baik (6.0-7.0)",
+          "n": 57,
+          "n_gon_pos": 42,
+          "n_gon_neg": 15,
+          "auc": 0.9952380952380953,
+          "acc": 0.9824561403508771,
+          "fn": 1,
+          "fp": 0,
+          "ece_bucket": 0.052351301423246496
+        },
+        {
+          "name": "SangatBaik (>7.0)",
+          "n": 5,
+          "n_gon_pos": 0,
+          "n_gon_neg": 5,
+          "auc": NaN,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": NaN
+        }
+      ],
+      "fold": 2
+    },
+    {
+      "auc": 0.9986263736263736,
+      "accuracy": 0.9905660377358491,
+      "sensitivity": 0.9871794871794872,
+      "specificity": 1.0,
+      "best_threshold": 0.7265942751815483,
+      "brier_raw": 0.02705985744629899,
+      "brier_cal": 0.016402123586379515,
+      "ece_raw": 0.08997082628731459,
+      "ece_cal": 0.05354523212910092,
+      "tp": 77,
+      "tn": 28,
+      "fp": 0,
+      "fn": 1,
+      "patient_accuracy": 0.9767441860465116,
+      "n_patients": 43,
+      "fn_patients_count": 1,
+      "fp_patients_count": 0,
+      "bucket_results": [
+        {
+          "name": "Sedang (3.5-5.0)",
+          "n": 16,
+          "n_gon_pos": 15,
+          "n_gon_neg": 1,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.03442859240328656
+        },
+        {
+          "name": "Cukup (5.0-6.0)",
+          "n": 26,
+          "n_gon_pos": 19,
+          "n_gon_neg": 7,
+          "auc": 1.0,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": 0.07322693642392625
+        },
+        {
+          "name": "Baik (6.0-7.0)",
+          "n": 57,
+          "n_gon_pos": 42,
+          "n_gon_neg": 15,
+          "auc": 0.9968253968253968,
+          "acc": 0.9824561403508771,
+          "fn": 1,
+          "fp": 0,
+          "ece_bucket": 0.05149964827720348
+        },
+        {
+          "name": "SangatBaik (>7.0)",
+          "n": 5,
+          "n_gon_pos": 0,
+          "n_gon_neg": 5,
+          "auc": NaN,
+          "acc": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "ece_bucket": NaN
+        }
+      ],
+      "fold": 3
+    }
+  ]
+}
